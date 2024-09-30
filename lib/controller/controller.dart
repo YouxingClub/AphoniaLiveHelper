@@ -138,7 +138,7 @@ void _addMessageToPrivateMessage(String msg) {
 void _addEmojiBanner(String url) {
   var prefix = "[CHAT:Emoji,";
   prefix += url.substring(7);
-  prefix += "]";
+  prefix += "] ";
   _addMessageToPrivateMessage(prefix);
 }
 

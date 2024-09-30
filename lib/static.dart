@@ -1,2 +1,3 @@
 var uuid;
-const wsport = 4005;
+var wsport;
+var configJson;

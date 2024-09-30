@@ -14,6 +14,7 @@ class _EmojiManagerPageState extends State<EmojiManagerPage> {
   List<File> emojiImages = []; // 存储当前文件夹中的表情包文件
   String selectedFolder = ''; // 当前选择的文件夹
   Directory? emoticonDirectory; // 表情包目录
+  TextEditingController newNameController = TextEditingController();
 
   @override
   void initState() {
@@ -67,7 +68,7 @@ class _EmojiManagerPageState extends State<EmojiManagerPage> {
     // 筛选出图片文件
     final List<File> images = entities
         .whereType<File>()
-        .where((file) => file.path.endsWith('.png') || file.path.endsWith('.jpg'))
+        .where((file) => file.path.endsWith('.png') || file.path.endsWith('.jpg') || file.path.endsWith('.webp') || file.path.endsWith('.bmp'))
         .toList();
 
     setState(() {
@@ -104,18 +105,17 @@ class _EmojiManagerPageState extends State<EmojiManagerPage> {
     );
   }
 
-
-
-
   // 显示修改表情包属性的弹窗
   void _showEditDialog(File emoji) {
+    newNameController.text = emoji.path.substring(emoji.parent.path.length + 1);
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("修改表情包属性"),
-          content: const TextField(
-            decoration: InputDecoration(labelText: "新名称"),
+          content: TextField(
+            controller: newNameController,
+            decoration: InputDecoration(labelText: "修改名称"),
           ),
           actions: <Widget>[
             TextButton(
@@ -127,6 +127,8 @@ class _EmojiManagerPageState extends State<EmojiManagerPage> {
             TextButton(
               child: const Text("保存"),
               onPressed: () {
+                emoji.renameSync('${emoji.parent.path}/${newNameController.text}');
+                _loadEmojisForFolder(emoji.parent.path.substring(emoji.parent.parent.path.length + 1));
                 // 保存属性修改逻辑
                 Navigator.of(context).pop();
               },
@@ -215,7 +217,7 @@ class _EmojiManagerPageState extends State<EmojiManagerPage> {
                   child: GridView.builder(
                     padding: const EdgeInsets.all(10),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4, // 网格列数
+                      crossAxisCount: 6, // 网格列数
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
                     ),

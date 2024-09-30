@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +9,7 @@ import 'package:type_controller/controller/controller.dart';
 import 'package:type_controller/home/home.dart';
 import 'package:type_controller/linkage/linkage.dart';
 import 'package:type_controller/log/log.dart';
+import 'package:type_controller/settings/config_file.dart';
 import 'package:type_controller/settings/echo_live_settings.dart';
 import 'package:type_controller/settings/editor_settings.dart';
 import 'package:type_controller/settings/emoticon_manager.dart';
@@ -19,65 +22,9 @@ import 'dart:ui' as ui;
 import 'dart:ffi';
 import 'dart:isolate';
 
-
-final DynamicLibrary dylib = DynamicLibrary.open("webserver.dll");
-
-
-// 定义函数指针
-typedef StartServerC = Void Function(Int32 port);
-typedef StartServerDart = void Function(int port);
-typedef StopServerC = Void Function();
-typedef StopServerDart = void Function();
-
-// 获取函数
-final StartServerDart startServer = dylib
-    .lookup<NativeFunction<StartServerC>>('StartWebServer')
-    .asFunction();
-
-final StopServerDart stopServer = dylib
-    .lookup<NativeFunction<StopServerC>>('StopWebServer')
-    .asFunction();
-
-// 在Isolate中运行的函数
-void startWebService(SendPort sendPort) {
-  startServer(wsport);
-  sendPort.send('echo-live-rev server is running');
-}
-
-void stopWebService(SendPort sendPort) {
-  stopServer();
-  sendPort.send("echo-live-rev server stopped");
-}
+import 'native/webserver_controller.dart';
 
 // 创建一个ReceivePort用于接收来自Isolate的消息
-
-Future<void> startServerIsolate() async {
-  var receivePort = ReceivePort();
-
-  await Isolate.spawn(
-    startWebService,
-    receivePort.sendPort,
-  );
-}
-
-Future<void> stopServerIsolate() async {
-  var receivePort = ReceivePort();
-
-  try {
-    await Isolate.spawn(
-      stopWebService,
-      receivePort.sendPort,
-    );
-  } catch (e) {
-    print(e);
-  }
-  // var serverIsolate =
-  print("aaa");
-  receivePort.listen((message) {
-    print(message);
-    receivePort.close(); // 关闭监听
-  });
-}
 
 void uuidGen() {
   uuid = const Uuid().v4();
@@ -88,10 +35,12 @@ void main() async {
   // 必须加上这一行。
   await windowManager.ensureInitialized();
   await hotKeyManager.unregisterAll();
-
+  configJson = await readConfigFile();
+  wsport = configJson['Controller']['WSServerPort'];
   doWhenWindowReady(() {
     const initialSize = ui.Size(1280, 720);
-    appWindow.minSize = initialSize;
+    const minsize = ui.Size(400, 400);
+    appWindow.minSize = minsize;
     appWindow.size = initialSize;
     appWindow.alignment = Alignment.center;
     appWindow.title = "祐星无声系直播助手";
@@ -133,6 +82,7 @@ class _MainPageState extends State<MainPage> with WindowListener{
   @override
   void initState() {
     super.initState();
+    wsport = configJson['Controller']['WSServerPort'];
     windowManager.addListener(this);
     startServerIsolate();
     uuidGen();
@@ -326,36 +276,36 @@ class _MainPageState extends State<MainPage> with WindowListener{
                     },
                     itemBuilder: (BuildContext context) =>
                         <PopupMenuEntry<int>>[
-                      // PopupMenuItem<int>(
-                      //   value: 1,
-                      //   child: AnimatedSwitcher(
-                      //     duration: const Duration(milliseconds: 300),
-                      //     child: Text(
-                      //       '编辑器设置',
-                      //       key: ValueKey<int>(_currentIndex == 4 ? 1 : 0),
-                      //       style: TextStyle(
-                      //         color: _currentIndex == 4
-                      //             ? Colors.blue
-                      //             : Colors.black,
-                      //       ),
-                      //     ),
-                      //   ),
-                      // ),
-                      // PopupMenuItem<int>(
-                      //   value: 2,
-                      //   child: AnimatedSwitcher(
-                      //     duration: const Duration(milliseconds: 300),
-                      //     child: Text(
-                      //       'Echo Live设置',
-                      //       key: ValueKey<int>(_currentIndex == 5 ? 1 : 0),
-                      //       style: TextStyle(
-                      //         color: _currentIndex == 5
-                      //             ? Colors.blue
-                      //             : Colors.black,
-                      //       ),
-                      //     ),
-                      //   ),
-                      // ),
+                      PopupMenuItem<int>(
+                        value: 1,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Text(
+                            '编辑器设置',
+                            key: ValueKey<int>(_currentIndex == 4 ? 1 : 0),
+                            style: TextStyle(
+                              color: _currentIndex == 4
+                                  ? Colors.blue
+                                  : Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
+                      PopupMenuItem<int>(
+                        value: 2,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Text(
+                            'Echo Live设置',
+                            key: ValueKey<int>(_currentIndex == 5 ? 1 : 0),
+                            style: TextStyle(
+                              color: _currentIndex == 5
+                                  ? Colors.blue
+                                  : Colors.black,
+                            ),
+                          ),
+                        ),
+                      ),
                       // PopupMenuItem<int>(
                       //   value: 3,
                       //   child: AnimatedSwitcher(
